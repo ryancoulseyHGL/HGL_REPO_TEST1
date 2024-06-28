@@ -42,6 +42,8 @@ exportLayer = FeatureLayerCollection.fromitem(survey_by_id)
 
 GEOdir = get_GEOdir()
 
+OutList = []
+
 for layer in exportLayer.layers:
     # Query all features
     #update if trying to download by day, test dataset doesn't have that info
@@ -59,7 +61,7 @@ for layer in exportLayer.layers:
         att = feature.attributes
         #store attributes to a csv, including location data
         
-        
+        #print(att)
         #download photos for this feature
         for photonum in range(len(layer0.attachments.get_list(oid=att['OBJECTID']))):
             photoID = layer0.attachments.get_list(oid=att['OBJECTID'])[photonum]['id']
@@ -90,16 +92,35 @@ for layer in exportLayer.layers:
             #confirm photo does not already exist 
             #if it does, skip
             if not os.path.exists(os.path.join(GEOdir,"03_RawData","photo_download","renamed",newPhotoName)):
+                
                 shutil.move(os.path.join(GEOdir, "03_RawData","photo_download",photoName),os.path.join(GEOdir,"03_RawData","photo_download","renamed",newPhotoName))
+                att["newPhoto_Name"] = newPhotoName
+                OutList.append(att)
+            
             else:
                 #delete the original photo, since the download function will not overwrite
                 os.remove(os.path.join(GEOdir,"03_RawData","photo_download",photoName))
+                att["Photo_Name"] = photoName
+                OutList.append(att)
+            
+    
+    
     
     
     # Convert the result to a pandas DataFrame
-    df = features.sdf
+    #[print(att, "\n") for att in OutList]
+    headers = list(OutList[0].keys())
+    print(headers)
+    outData = []
+    for obj in OutList:
+        out = list(obj.values())
+        print(out, "\n")
+        outData.append(out)
+        
+    df = pd.DataFrame(outData, columns=headers)
     # Save DataFrame to CSV
     csv_path = os.path.join(GEOdir, "03_RawData", "feature_layer_data.csv")
     df.to_csv(csv_path, index=False)
     
     print(f"CSV file with photo names saved at: {csv_path}")
+
